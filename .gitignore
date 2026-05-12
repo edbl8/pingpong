@@ -1,2 +1,2 @@
-./sensor/Output
-./sensor/*.jlink
+sensor/Output/
+sensor/*.jlink
