@@ -1,0 +1,7 @@
+Protocol: mqtt://
+
+Host: broker.hivemq.com
+
+Port: 1883
+
+Advanced: umu_pingis_grupp7/#

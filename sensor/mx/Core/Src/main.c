@@ -27,6 +27,13 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "ili9341.h"
+
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +54,21 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+
+QueueHandle_t uart_queue;
+
+volatile uint8_t rx_byte;
+
+// states
+volatile uint8_t auto_mode = 0;
+volatile uint8_t thermal_mode = 0;
+volatile uint8_t shoot_enabled = 0;
+
+volatile uint16_t aim_value = 1650;
+
+volatile uint16_t motor1_speed = 600;
+volatile uint16_t motor2_speed = 600;
 
 
 const uint16_t image2[] = {
@@ -275,7 +297,7 @@ void get_temp(float *pixels){
 
   uint8_t raw[128];
 
-  status = HAL_I2C_Mem_Read(&hi2c3, AMG8833_ADDR, 0x60, I2C_MEMADD_SIZE_8BIT, raw, 128, 100);
+  status = HAL_I2C_Mem_Read(&hi2c1, AMG8833_ADDR, 0x80, I2C_MEMADD_SIZE_8BIT, raw, 128, 100);
 
     for(int i = 0; i < 64; i++)
     {
@@ -285,7 +307,7 @@ void get_temp(float *pixels){
         rawValue = raw[i * 2] | (raw[i * 2 + 1] << 8);
 
         // 12-bit signed conversion
-        if(rawValue & 0x600)
+        if(rawValue & 0x800)
         {
             signedValue = rawValue - 4096;
         }
@@ -349,6 +371,402 @@ void draw_img(int side_flag) {
   draw_player(side_flag);
 } 
 
+
+
+void vApplicationTickHook(void) {
+  // printf("TICK!\n");
+}
+
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+  printf("STACK OVERFLOW DETECTED, task: %s\n", pcTaskName);
+  while (1) {}
+}
+
+
+void vApplicationMallocFailedHook(void) {
+  printf("MALLOC FAILED!\n");
+  while (1) {}
+}
+
+
+void task_a(void *params) {
+  while (1) {
+    printf("--- task_a ---\n");
+    vTaskDelay(pdMS_TO_TICKS(3000)); // Block
+  }
+}
+void task_b(void *params) {
+  while (1) {
+    printf("--- task_b ---\n");
+    vTaskDelay(pdMS_TO_TICKS(1000)); // Block
+  }
+}
+
+
+
+
+void vAutoModeTask(void *params) {
+
+    while (1) {
+
+        if (!auto_mode) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"SPIN:900:750\n",
+            strlen("SPIN:900:750\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+
+        if(!auto_mode) continue;
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"AIM:1750\n",
+            strlen("AIM:1700\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(3000));
+
+        if(!auto_mode) continue;
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"SHOOT\n",
+            strlen("SHOOT\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        if(!auto_mode) continue;
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"AIM:1600\n",
+            strlen("AIM:1600\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(3000));
+
+        if(!auto_mode) continue;
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"SHOOT\n",
+            strlen("SHOOT\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        if(!auto_mode) continue;
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"AIM:1450\n",
+            strlen("AIM:1450\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(3000));
+
+        if(!auto_mode) continue;
+
+        HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"SHOOT\n",
+            strlen("SHOOT\n"),
+            100
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+}
+
+
+void vThermalDataTask(void *params) {
+
+    float pixels[64];
+
+    float sum_right;
+    float sum_left;
+
+    int side_flag = 0;
+
+    int shoot_timer = 0;
+    int telemetry_timer = 0;
+
+    while(1){
+
+        get_temp(pixels);
+
+
+        // =========================
+        // SUM LEFT / RIGHT
+        // =========================
+
+        sum_left = 0.0f;
+        sum_right = 0.0f;
+
+        for(int y = 0; y < 8; y++) {
+
+            for(int x = 0; x < 4; x++) {
+
+                sum_left += pixels[x + 8*y];
+            }
+
+            for(int x = 4; x < 8; x++) {
+
+                sum_right += pixels[x + 8*y];
+            }
+        }
+
+        side_flag =
+            (sum_left > sum_right) ? 0 : 1;
+
+
+        
+        if (thermal_mode) {
+          if (side_flag) {
+            HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"AIM:1750\n",
+            strlen("AIM:1700\n"),
+            100);
+
+            vTaskDelay(pdMS_TO_TICKS(3000));
+            
+            HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"SHOOT\n",
+            strlen("SHOOT\n"),
+            100);
+
+          } else {
+            HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"AIM:1450\n",
+            strlen("AIM:1700\n"),
+            100);
+
+            vTaskDelay(pdMS_TO_TICKS(3000));
+
+            HAL_UART_Transmit(
+            &huart1,
+            (uint8_t*)"SHOOT\n",
+            strlen("SHOOT\n"),
+            100);
+          }
+        }
+
+        // =========================
+        // AUTO MODE
+        // =========================
+
+        //if(auto_mode) {
+
+        //    char uart_msg[32];
+
+        //    // spelare vänster
+        //    if(side_flag == 0) {
+
+        //        aim_value = 1700;
+
+        //    } else {
+
+        //        aim_value = 1500;
+        //    }
+
+        //    // AIM
+        //    sprintf(
+        //        uart_msg,
+        //        "AIM:%d\n",
+        //        aim_value
+        //    );
+
+        //    HAL_UART_Transmit(
+        //        &huart1,
+        //        (uint8_t*)uart_msg,
+        //        strlen(uart_msg),
+        //        100
+        //    );
+
+        //    // liten delay så servo hinner
+        //    vTaskDelay(pdMS_TO_TICKS(300));
+
+        //    // SHOOT var 4e sekund
+        //    shoot_timer++;
+
+        //    if(shoot_timer >= 4) {
+
+        //        shoot_timer = 0;
+
+        //        char shoot_cmd[] = "SHOOT\n";
+
+        //        HAL_UART_Transmit(
+        //            &huart1,
+        //            (uint8_t*)shoot_cmd,
+        //            strlen(shoot_cmd),
+        //            100
+        //        );
+        //    }
+        //}
+
+        // =========================
+        // SEND THERMAL DATA
+        // =========================
+
+        telemetry_timer++;
+
+        if(telemetry_timer >= 1) {
+
+            telemetry_timer = 0;
+
+            char thermal_data[512];
+
+            thermal_data[0] = '\0';
+
+            char temp_str[10];
+
+            for(int i = 0; i < 64; i++) {
+                
+
+                sprintf(temp_str, "%d,", (int)pixels[i]);
+
+                strcat(thermal_data, temp_str);
+            }
+
+            thermal_data[
+                strlen(thermal_data) - 1
+            ] = '\n';
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t*)thermal_data,
+                strlen(thermal_data),
+                100
+            );
+        }
+
+        // =========================
+        // DISPLAY
+        // =========================
+
+        draw_img(side_flag);
+
+        vTaskDelay(pdMS_TO_TICKS(3000));
+    }
+}
+
+void vCommandHandlerTask(void *params) {
+
+    uint8_t recievedChar;
+
+    char messageBuffer[64];
+
+    int bufferIndex = 0;
+
+    printf("Command Task lever och väntar på ESP32...\n");
+
+    while (1) {
+
+        if(xQueueReceive(uart_queue, &recievedChar, portMAX_DELAY) == pdTRUE) {
+    
+            if (recievedChar == '\r') {
+                continue; 
+            }
+
+            if(recievedChar == '\n') {
+                messageBuffer[bufferIndex] = '\0';
+
+                if (strcmp(messageBuffer, "MODE:AUTO") == 0) {
+                  printf("hej\n");
+                  auto_mode = 1;
+                  thermal_mode = 0;
+                }
+                if (strcmp(messageBuffer, "MODE:THERMAL") == 0) {
+                  thermal_mode = 1;
+                  auto_mode = 0;
+                }
+                if (strcmp(messageBuffer, "MODE:MANUAL") == 0 || strcmp(messageBuffer, "STOP") == 0) {
+                  auto_mode = 0;
+                  thermal_mode = 0;
+                }
+
+                printf(
+                    "RX CMD: %s\n",
+                    messageBuffer
+                );
+
+                // vidare till maskincontroller
+                HAL_UART_Transmit(
+                    &huart1,
+                    (uint8_t*)messageBuffer,
+                    strlen(messageBuffer),
+                    100
+                );
+
+                HAL_UART_Transmit(
+                    &huart1,
+                    (uint8_t*)"\n",
+                    1,
+                    100
+                );
+
+                bufferIndex = 0;
+            }
+
+            else {
+
+                if(bufferIndex < 63) {
+
+                    messageBuffer[bufferIndex++] =
+                        recievedChar;
+                }
+            }
+        }
+    }
+}
+
+void HAL_UART_RxCpltCallback(
+    UART_HandleTypeDef *huart
+) {
+
+
+    // DATA FRÅN ESP32
+    if(huart->Instance == USART2) {
+
+        BaseType_t xHigherPriorityTaskWoken =
+            pdFALSE;
+
+        xQueueSendFromISR(
+            uart_queue,
+            &rx_byte,
+            &xHigherPriorityTaskWoken
+        );
+
+        // starta ny receive på USART2
+        HAL_UART_Receive_IT(
+            &huart2,
+            &rx_byte,
+            1
+        );
+
+        portYIELD_FROM_ISR(
+            xHigherPriorityTaskWoken
+        );
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -379,14 +797,15 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+ 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
-  MX_I2C3_Init();
+  MX_USART1_UART_Init();
+  MX_I2C1_Init();
   MX_SPI1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
   uint8_t raw[128];
@@ -395,6 +814,30 @@ int main(void)
   ILI9341_Init();
   ILI9341_FillScreen(ILI9341_GREEN);
   draw_table();
+
+  // Test för RTOS
+  //// Start SystemView tracing
+  //traceSTART();
+  //// Create FreeRTOS tasks
+  //xTaskCreate(task_a, "Task A", 128, NULL, 1, NULL);
+  //xTaskCreate(task_b, "Task B", 128, NULL, 1, NULL);
+  //// Start the FreeRTOS scheduler
+  //vTaskStartScheduler();
+
+  // setup för kommunikation
+
+  traceSTART();
+
+  uart_queue = xQueueCreate(64, sizeof(uint8_t));
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+
+  xTaskCreate(vCommandHandlerTask, "CmdTask", 256, NULL, 2, NULL);
+
+  xTaskCreate(vThermalDataTask, "ThermalTask", 512, NULL, 1, NULL);
+
+  xTaskCreate(vAutoModeTask, "AutoTask", 512, NULL, 1, NULL);
+
+  vTaskStartScheduler();
 
   /* USER CODE END 2 */
 
@@ -405,36 +848,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-    get_temp(pixels);
-
-    sum_left = 0.0f;
-    sum_right = 0.0f;
-
-    for(int y = 0; y < 8; y++)
-    {
-        for(int x = 0; x < 4; x++)
-        {
-            sum_left += pixels[x + 8*y];
-        }
-
-        for(int x = 4; x < 8; x++)
-        {
-            sum_right += pixels[x + 8*y];
-        }
-    }
-
-    if(sum_left > sum_right)
-    {
-        side_flag = 0; // vänster varm
-    }
-    else
-    {
-        side_flag = 1; // höger varm
-    }
-
-    printf("%f, %f\n", sum_left, sum_right);
-    printf("%d\n", side_flag);
 
     //printf("\r\n========================\r\n");
 
@@ -448,11 +861,6 @@ int main(void)
     //    printf("\r\n");
     //}
 
-    //draw_sensor_data(pixels);
-    draw_img(side_flag);
-
-
-    HAL_Delay(3000);
     
   }
   /* USER CODE END 3 */
@@ -521,6 +929,28 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM2 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM2)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

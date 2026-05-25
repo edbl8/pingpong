@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<title>PingisBot App</title>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    background:#1e1e1e;
+    color:white;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+
+.card{
+    background:#2b2b2b;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:12px;
+}
+
+button{
+    padding:12px 20px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+.btn-green{
+    background:#2ecc71;
+    color:white;
+}
+
+.btn-blue{
+    background:#3498db;
+    color:white;
+}
+
+.btn-orange{
+    background:#f39c12;
+    color:white;
+}
+
+.btn-red{
+    background:#e74c3c;
+    color:white;
+}
+
+.motor-control{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.motor-control input{
+    width:80px;
+    padding:8px;
+    border-radius:6px;
+    border:none;
+    font-size:16px;
+}
+
+.stats{
+    font-size:20px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns: repeat(8, 50px);
+    grid-template-rows: repeat(8, 50px);
+    gap:4px;
+    justify-content:center;
+}
+
+.cell{
+    width:50px;
+    height:50px;
+    background:#222;
+    border-radius:4px;
+}
+
+.status{
+    font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🏓 PingisBot Kontrollpanel</h1>
+
+    <h3 id="status" class="status">
+        Status: Frånkopplad
+    </h3>
+
+    <!-- MODE -->
+    <div class="card">
+
+        <h2>Läge</h2>
+
+        <button
+            class="btn-blue"
+            onclick="setMode('AUTO')"
+        >
+            Auto Mode
+        </button>
+
+        <button
+            class="btn-red"
+            onclick="setMode('THERMAL')"
+        >
+            Thermal Mode
+        </button>
+
+        <button
+            class="btn-orange"
+            onclick="setMode('MANUAL')"
+        >
+            Manual Mode
+        </button>
+
+    </div>
+
+    <!-- AIM -->
+    <div class="card">
+
+        <h2>Aim</h2>
+
+        <input
+            type="range"
+            id="aimSlider"
+            min="1400"
+            max="1800"
+            value="1600"
+            style="width:100%;"
+            oninput="updateAimValue(this.value)"
+        >
+
+        <p>
+            Position:
+            <span id="aimValue">1650</span>
+        </p>
+
+        <button
+            class="btn-blue"
+            onclick="sendAim()"
+        >
+            Set Aim
+        </button>
+
+    </div>
+
+    <!-- MOTORER -->
+    <div class="card">
+
+        <h2>Motorhastighet & Skott</h2>
+
+        <!-- MOTOR 1 -->
+        <div class="motor-control">
+
+            <label>Motor 1:</label>
+
+            <button onclick="changeSpeed('motor1', -50)">
+                ⬇
+            </button>
+
+            <input
+                type="number"
+                id="motor1"
+                value="600"
+                min="300"
+                max="900"
+            >
+
+            <button onclick="changeSpeed('motor1', 50)">
+                ⬆
+            </button>
+
+        </div>
+
+        <!-- MOTOR 2 -->
+        <div class="motor-control">
+
+            <label>Motor 2:</label>
+
+            <button onclick="changeSpeed('motor2', -50)">
+                ⬇
+            </button>
+
+            <input
+                type="number"
+                id="motor2"
+                value="600"
+                min="300"
+                max="900"
+            >
+
+            <button onclick="changeSpeed('motor2', 50)">
+                ⬆
+            </button>
+
+        </div>
+
+        <!-- KNAPPAR -->
+        <div
+            style="
+                display:flex;
+                flex-wrap:wrap;
+                gap:10px;
+                margin-top:20px;
+            "
+        >
+
+            <!-- SEND SPEED -->
+            <button
+                class="btn-green"
+                onclick="sendMotorSpeeds()"
+            >
+                Skicka Hastigheter
+            </button>
+
+            <!-- TOP SPIN -->
+            <button
+                class="btn-blue"
+                onclick="setPreset('TOP')"
+            >
+                Top Spin
+            </button>
+
+            <!-- BACK SPIN -->
+            <button
+                class="btn-orange"
+                onclick="setPreset('BACK')"
+            >
+                Back Spin
+            </button>
+
+            <!-- FLAT -->
+            <button
+                class="btn-green"
+                onclick="setPreset('FLAT')"
+            >
+                Flat Spin
+            </button>
+
+            <!-- STOP -->
+            <button
+                class="btn-red"
+                onclick="stopMotors()"
+            >
+                STOP
+            </button>
+
+            <!-- SHOOT -->
+            <button
+                class="btn-red"
+                onclick="shootBall()"
+            >
+                SHOOT
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- STATS -->
+    <div class="card stats">
+
+        <h2>Statistik</h2>
+
+        <p>
+            Antal servar:
+            <span id="serveCount">0</span>
+        </p>
+
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="card">
+
+        <h2>Värmesensor 8x8</h2>
+
+        <div id="heatGrid" class="grid"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+const brokerUrl = 'ws://broker.hivemq.com:8000/mqtt';
+
+const client = mqtt.connect(brokerUrl, {});
+
+let serveCounter = 0;
+
+// =========================
+// SKAPA 8x8 GRID
+// =========================
+
+const heatGrid =
+    document.getElementById("heatGrid");
+
+for(let i = 0; i < 64; i++){
+
+    const cell = document.createElement("div");
+
+    cell.classList.add("cell");
+
+    heatGrid.appendChild(cell);
+}
+
+// =========================
+// MQTT CONNECT
+// =========================
+
+client.on('connect', function () {
+
+    document.getElementById('status').innerText =
+        "Status: Ansluten 🟢";
+
+    document.getElementById('status').style.color =
+        "#2ecc71";
+
+    client.subscribe('umu_pingis_grupp7/telemetry');
+});
+
+// =========================
+// MQTT ERROR
+// =========================
+
+client.on('error', function (error) {
+
+    document.getElementById('status').innerText =
+        "Status: Nätverksfel 🔴";
+
+    document.getElementById('status').style.color =
+        "#e74c3c";
+
+    console.log(error);
+});
+
+// =========================
+// MQTT MESSAGE
+// =========================
+
+client.on('message', function (topic, message) {
+
+    const msg = message.toString();
+
+    console.log("Data:", msg);
+
+    /*
+    Förväntat format:
+    10,20,30...
+    64 värden
+    */
+
+    const values =
+        msg.split(',').map(Number);
+
+    if(values.length === 64){
+
+        updateHeatmap(values);
+    }
+});
+
+// =========================
+// SEND COMMAND
+// =========================
+
+function sendCommand(cmd){
+
+    if(client && client.connected){
+
+        client.publish(
+            'umu_pingis_grupp7/control',
+            cmd
+        );
+
+        console.log("Skickade:", cmd);
+
+    }else{
+
+        alert("Inte ansluten till servern");
+    }
+}
+
+// =========================
+// MODE
+// =========================
+
+function setMode(mode){
+
+    sendCommand(`CMD:MODE:${mode}`);
+}
+
+// =========================
+// AIM
+// =========================
+
+function updateAimValue(val){
+
+    document.getElementById("aimValue").innerText =
+        val;
+}
+
+function sendAim(){
+
+    const aim =
+        document.getElementById("aimSlider").value;
+
+    sendCommand(`CMD:AIM:${aim}`);
+}
+
+// =========================
+// CHANGE SPEED
+// =========================
+
+function changeSpeed(id, amount){
+
+    const input =
+        document.getElementById(id);
+
+    let value =
+        parseInt(input.value);
+
+    value += amount;
+
+    // clamp
+    value = Math.max(300,
+             Math.min(900, value));
+
+    input.value = value;
+}
+
+// =========================
+// SEND SPIN
+// =========================
+
+function sendMotorSpeeds(){
+
+    let m1 =
+        parseInt(document.getElementById("motor1").value);
+
+    let m2 =
+        parseInt(document.getElementById("motor2").value);
+
+    // clamp
+    m1 = Math.max(300, Math.min(900, m1));
+    m2 = Math.max(300, Math.min(900, m2));
+
+    document.getElementById("motor1").value = m1;
+    document.getElementById("motor2").value = m2;
+
+    sendCommand(`CMD:SPIN:${m1}:${m2}`);
+}
+
+// =========================
+// PRESETS
+// =========================
+
+function setPreset(type){
+
+    let m1 = 750;
+    let m2 = 750;
+
+    // TOP SPIN
+    if(type === "TOP"){
+
+        m1 = 900;
+        m2 = 750;
+    }
+
+    // BACK SPIN
+    else if(type === "BACK"){
+
+        m1 = 750;
+        m2 = 900;
+    }
+
+    // FLAT
+    else if(type === "FLAT"){
+
+        m1 = 750;
+        m2 = 750;
+    }
+
+    document.getElementById("motor1").value = m1;
+    document.getElementById("motor2").value = m2;
+
+    sendCommand(`CMD:SPIN:${m1}:${m2}`);
+}
+
+// =========================
+// STOP
+// =========================
+
+function stopMotors(){
+
+    sendCommand("CMD:STOP");
+}
+
+// =========================
+// SHOOT
+// =========================
+
+function shootBall(){
+
+    sendCommand("CMD:SHOOT");
+
+    serveCounter++;
+
+    document.getElementById("serveCount").innerText =
+        serveCounter;
+}
+
+// =========================
+// UPDATE HEATMAP
+// =========================
+
+function updateHeatmap(values){
+
+    const cells =
+        document.querySelectorAll(".cell");
+
+    values.forEach((temp, index) => {
+
+        const red =
+            Math.min(255, temp * 5);
+
+        const blue =
+            255 - red;
+
+        cells[index].style.background =
+            `rgb(${red},0,${blue})`;
+    });
+}
+
+</script>
+
+</body>
+</html>

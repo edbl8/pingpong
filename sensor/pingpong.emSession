@@ -23,16 +23,19 @@
  <Project>
   <ProjectSessionItem path="pingpong"/>
   <ProjectSessionItem path="pingpong;pingpong"/>
-  <ProjectSessionItem path="pingpong;pingpong;CMSIS Files"/>
+  <ProjectSessionItem path="pingpong;pingpong;freertos"/>
+  <ProjectSessionItem path="pingpong;pingpong;freertos;include"/>
+  <ProjectSessionItem path="pingpong;pingpong;freertos;src"/>
+  <ProjectSessionItem path="pingpong;pingpong;freertos;src;portable"/>
+  <ProjectSessionItem path="pingpong;pingpong;freertos;src;portable;GCC"/>
+  <ProjectSessionItem path="pingpong;pingpong;freertos;src;portable;MemMang"/>
   <ProjectSessionItem path="pingpong;pingpong;mx"/>
   <ProjectSessionItem path="pingpong;pingpong;mx;Core"/>
+  <ProjectSessionItem path="pingpong;pingpong;mx;Core;Inc"/>
   <ProjectSessionItem path="pingpong;pingpong;mx;Core;Src"/>
   <ProjectSessionItem path="pingpong;pingpong;mx;Drivers"/>
-  <ProjectSessionItem path="pingpong;pingpong;mx;Drivers;CMSIS"/>
   <ProjectSessionItem path="pingpong;pingpong;mx;Drivers;ili9341"/>
-  <ProjectSessionItem path="pingpong;pingpong;mx;Drivers;STM32L4xx_HAL_Driver"/>
-  <ProjectSessionItem path="pingpong;pingpong;mx;Drivers;STM32L4xx_HAL_Driver;Inc"/>
-  <ProjectSessionItem path="pingpong;pingpong;mx;Drivers;STM32L4xx_HAL_Driver;Src"/>
+  <ProjectSessionItem path="pingpong;pingpong;sysview"/>
  </Project>
  <Register1>
   <RegisterWindow invisibleNodes="" visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/MSP;CPU/PSP;CPU/PRIMASK;CPU/BASEPRI;CPU/FAULTMASK;CPU/CONTROL;CPU/internal" binaryNodes="" asciiNodes="" openNodes="CPU - Current Context" name="pingpong_Debug" decimalNodes="" octalNodes="" unsignedNodes=""/>
@@ -65,10 +68,32 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="114" useTextEdit="1" path="mx/Core/Src/main.c" left="0" top="92" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="413" useTextEdit="1" path="mx/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c" left="0" top="391" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Core/Src/stm32l4xx_it.c" left="0" top="52" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="30" y="4" useTextEdit="1" path="mx/Drivers/ili9341/ili9341.c" left="0" selected="1" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="535" useTextEdit="1" path="mx/Core/Src/main.c" left="0" selected="1" top="592" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="88" useTextEdit="1" path="mx/Core/Src/stm32l4xx_it.c" left="0" top="72" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="50" y="276" useTextEdit="1" path="mx/Drivers/ili9341/ili9341.c" left="0" top="262" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="31" y="9" useTextEdit="1" path="mx/Drivers/ili9341/ili9341.h" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="16" y="2" useTextEdit="1" path="mx/Drivers/ili9341/ili9341_touch.c" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi.h" left="0" top="108" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Drivers/ili9341/fonts.c" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Drivers/ili9341/fonts.h" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="942" useTextEdit="1" path="mx/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi.c" left="0" top="926" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="test.c" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="38" useTextEdit="1" path="freertos/include/task.h" left="0" top="12" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="freertos/include/timers.h" left="0" top="6" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="56" y="89" useTextEdit="1" path="mx/Core/Inc/FreeRTOSConfig.h" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="19" y="1659" useTextEdit="1" path="freertos/src/portable/tasks.c" left="0" top="8833" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="40" y="1158" useTextEdit="1" path="freertos/src/portable/queue.c" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="31" y="1252" useTextEdit="1" path="freertos/src/portable/timers.c" left="0" top="1232" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="freertos/src/portable/list.c" left="0" top="3" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="8" y="1285" useTextEdit="1" path="freertos/include/queue.h" left="0" top="1262" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="18" y="44" useTextEdit="1" path="freertos/src/portable/MemMang/heap_4.c" left="0" top="33" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="freertos/include/message_buffer.h" left="0" top="54" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="freertos/include/semphr.h" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Core/Inc/main.h" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="freertos/include/FreeRTOS.h" left="0" top="75" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Core/Inc/gpio.h" left="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" path="mx/Core/Inc/i2c.h" left="0" top="0" codecName="Default"/>
  </Files>
- <EMStudioWindow activeProject="pingpong" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="" debugSearchPath="" autoConnectCapabilities="3199"/>
+ <EMStudioWindow activeProject="pingpong" fileDialogDefaultFilter="*" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="C:/Users/edbl0006/pingpong/sensor/RTT/RTT" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>
