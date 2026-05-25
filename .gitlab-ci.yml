@@ -1,3 +1,10 @@
 pages:
+  stage: deploy
   script:
-    - echo "hello"
+    - mkdir public
+    - cp -r WebApp/* public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
